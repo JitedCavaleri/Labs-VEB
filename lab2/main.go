@@ -32,7 +32,6 @@ func main() {
 
 	r := gin.Default()
 
-	// Старая лаба
 	r.GET("/info", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"days_before_new_year": daysBeforeNewYear(),
@@ -44,7 +43,7 @@ func main() {
 	r.GET("/items", h.GetAll)
 	r.GET("/items/:id", h.GetByID)
 	r.PUT("/items/:id", h.Update)
-	r.PATCH("/items/:id", h.Patch) // ← Новый метод по лабе
+	r.PATCH("/items/:id", h.Patch)
 	r.DELETE("/items/:id", h.Delete)
 
 	r.Run(":4200")
