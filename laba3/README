@@ -1,0 +1,18 @@
+docker-compose up --build  запускаем докер контейнер 
+docker-compose down -v --remove-orphans && docker-compose up --build  Пересоздать базу данных
+go run main.go  Запуск локально без Docker, если база запущена
+go mod tidy   Обновить зависимости
+docker ps   Просмотр запущенных контейнеров
+
+
+Сервер будет доступен по адресу: http://localhost:4200
+
+
+POST,/auth/register      Регистрация,Public
+POST,/auth/login         Вход (устанавливает cookies),Public
+POST,/auth/refresh       Обновление токенов,Public
+GET,/auth/whoami         Информация о текущем пользователе,Private
+POST,/auth/logout        Выход из текущей сессии,Private
+POST,/auth/logout-all    Выход из всех сессий,Private
+GET,/auth/oauth/yandex   Начало OAuth через Yandex,Public
+GET,/auth/oauth/yandex/callback     Callback от Yandex,Public
