@@ -1,0 +1,86 @@
+Пример `.env.example`
+env
+# App environment: development | local | production
+APP_ENV=development
+
+# Postgres
+DB_USER=labuser
+DB_PASSWORD=labpassword
+DB_NAME=labdb
+
+# JWT
+JWT_ACCESS_SECRET=change_me_to_long_random_string_64+
+JWT_REFRESH_SECRET=change_me_to_another_long_random_string_64+
+JWT_ACCESS_EXPIRATION=15m
+JWT_REFRESH_EXPIRATION=7d
+
+# OAuth — Yandex
+YANDEX_CLIENT_ID=
+YANDEX_CLIENT_SECRET=
+YANDEX_CALLBACK_URL=http://localhost:4200/auth/oauth/yandex/callback
+
+# OAuth — VK
+VK_CLIENT_ID=
+VK_CLIENT_SECRET=
+VK_CALLBACK_URL=http://localhost:4200/auth/oauth/vk/callback
+
+# Cookies
+COOKIE_DOMAIN=
+COOKIE_SECURE=false
+
+Эндпоинты в документации
+Public
+`GET /info` — счётчик дней до Нового года
+Auth
+`POST /auth/register` — регистрация (201, 400, 409, 500)
+`POST /auth/login` — вход (200, 400, 401, 500)
+`POST /auth/refresh` — обновление пары токенов (200, 401)
+`POST /auth/forgot-password` — запрос сброса пароля (200, 400)
+`POST /auth/reset-password` — установка нового пароля (200, 400, 500)
+`GET  /auth/whoami` 🔒 — профиль текущего пользователя (200, 401)
+`POST /auth/logout` 🔒 — выход (текущая сессия) (200, 401)
+`POST /auth/logout-all` 🔒 — выход со всех устройств (200, 401, 500)
+OAuth
+`GET /auth/oauth/{provider}` — старт OAuth (302, 400)
+`GET /auth/oauth/{provider}/callback` — callback (200, 400, 401, 500)
+Items (CRUD из лабы №2) 🔒
+`POST   /items` — создать (201, 400, 401, 500)
+`GET    /items` — список с пагинацией (200, 401, 500)
+`GET    /items/{id}` — получить (200, 400, 401, 403, 404)
+`PUT    /items/{id}` — полное обновление (200, 400, 401, 403, 404)
+`PATCH  /items/{id}` — частичное обновление (200, 400, 401, 403, 404)
+`DELETE /items/{id}` — soft delete (204, 400, 401, 403, 404)
+🔒 — требует авторизации.
+
+
+Структура проекта
+
+.
+├── config/             # Загрузка .env, IsProduction()
+├── database/           # GORM-коннект, AutoMigrate
+├── docs/               # СГЕНЕРИРОВАННАЯ swag-ом спецификация
+├── dto/                # Request/Response DTO с example-тэгами
+├── handlers/           # Gin-хендлеры со swagger-аннотациями
+│   ├── auth_handler.go
+│   ├── info_handler.go
+│   └── item_handler.go
+├── middleware/         # AuthMiddleware
+├── models/             # GORM-модели (чувствительные поля -> swaggerignore)
+├── services/           # Бизнес-логика
+├── utils/              # JWT, bcrypt, cookies
+├── Dockerfile
+├── docker-compose.yml
+├── .env.example
+├── go.mod
+└── main.go             # Глобальные @-аннотации + условный mount /api/docs
+
+командs
+
+Запустить	docker compose up --build
+Перезапустить с пересборкой	docker compose down && docker compose up --build
+Остановить	docker compose down
+Полная очистка (включая БД)	docker compose down -v
+Логи приложения	docker compose logs -f app
+Зайти в контейнер	docker exec -it wp_labs_app sh
+Проверить, что Swagger жив	curl -i http://localhost:4200/api/docs/index.html
+Проверить блокировку в проде	curl -i http://localhost:4200/api/docs (после APP_ENV=production)
