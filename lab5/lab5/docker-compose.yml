@@ -1,0 +1,123 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: wp_labs_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - wp_labs_postgres:/var/lib/postgresql/data
+    networks:
+      - wp_labs_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ---- Лаба 5: кеш Redis ----
+  # AUTH защищён паролем (REDIS_PASSWORD), AOF включён для персистентности.
+  # Контейнер ОБЯЗАТЕЛЬНО на одной сети с приложением; снаружи порт открыт только
+  # для удобства отладки через redis-cli с хоста — на проде эту строку нужно убрать.
+  redis:
+    image: redis:7-alpine
+    container_name: wp_labs_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - wp_labs_redis:/data
+    networks:
+      - wp_labs_network
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+  app:
+    build: .
+    container_name: wp_labs_app
+    restart: unless-stopped
+    environment:
+      # App env (development | local | production)
+      APP_ENV: ${APP_ENV}
+
+      # DB
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      PORT: 4200
+
+      # JWT
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION}
+
+      # OAuth — Yandex
+      YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID}
+      YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET}
+      YANDEX_CALLBACK_URL: ${YANDEX_CALLBACK_URL}
+
+      # OAuth — VK
+      VK_CLIENT_ID: ${VK_CLIENT_ID}
+      VK_CLIENT_SECRET: ${VK_CLIENT_SECRET}
+      VK_CALLBACK_URL: ${VK_CALLBACK_URL}
+
+      # Cookies
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+      COOKIE_SECURE: ${COOKIE_SECURE}
+
+      # ---- Лаба 5: Redis ----
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_DB: 0
+      CACHE_TTL_DEFAULT: ${CACHE_TTL_DEFAULT}
+    ports:
+      - "4200:4200"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - wp_labs_network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: wp_labs_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'True'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - wp_labs_network
+    depends_on:
+      - postgres
+
+volumes:
+  wp_labs_postgres:
+  wp_labs_redis:
+  pgadmin_data:
+
+networks:
+  wp_labs_network:
